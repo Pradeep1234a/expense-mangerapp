@@ -1,7 +1,0 @@
-flask==3.0.3
-flask-session==0.8.0
-supabase==2.9.0
-python-dotenv==1.0.1
-bcrypt==4.2.0
-gunicorn==23.0.0
-python-dateutil==2.9.0.post0
