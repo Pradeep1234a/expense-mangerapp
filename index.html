@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="StudyWallet – AI-powered student expense manager" />
+<meta name="theme-color" content="#09090f" />
+<title>StudyWallet – AI Student Expense Manager</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ═══ AUTH SCREEN ═══ -->
+<div id="authScreen" class="auth-screen">
+  <div class="auth-bg-grid"></div>
+  <div class="auth-glow auth-glow-1"></div>
+  <div class="auth-glow auth-glow-2"></div>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">💰</div>
+      <div>
+        <div class="auth-logo-name">StudyWallet</div>
+        <div class="auth-logo-tagline">AI Student Finance Manager</div>
+      </div>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginForm">
+      <h2 class="auth-title">Welcome back</h2>
+      <p class="auth-sub">Sign in to your student dashboard</p>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="you@university.edu" autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <div id="loginError" class="auth-error" style="display:none"></div>
+      <button class="btn btn-primary btn-full" onclick="handleLogin()" id="loginBtn">
+        <span>Sign In</span>
+      </button>
+      <div class="auth-divider"><span>or</span></div>
+      <button class="btn btn-ghost btn-full" onclick="handleGoogleLogin()">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+      <p class="auth-switch">No account? <a href="#" onclick="showSignup()">Sign up free →</a></p>
+      <p class="auth-switch"><a href="#" onclick="showReset()">Forgot password?</a></p>
+    </div>
+
+    <!-- Signup Form -->
+    <div id="signupForm" style="display:none">
+      <h2 class="auth-title">Create account</h2>
+      <p class="auth-sub">Start managing your student finances</p>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="signupName" placeholder="Your name" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="signupEmail" placeholder="you@university.edu" autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="signupPassword" placeholder="Min 6 characters" autocomplete="new-password" />
+      </div>
+      <div id="signupError" class="auth-error" style="display:none"></div>
+      <div id="signupSuccess" class="auth-success" style="display:none"></div>
+      <button class="btn btn-primary btn-full" onclick="handleSignup()" id="signupBtn">Create Account</button>
+      <p class="auth-switch">Already have an account? <a href="#" onclick="showLogin()">Sign in →</a></p>
+    </div>
+
+    <!-- Reset Form -->
+    <div id="resetForm" style="display:none">
+      <h2 class="auth-title">Reset password</h2>
+      <p class="auth-sub">We'll send a recovery link to your email</p>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="resetEmail" placeholder="you@university.edu" />
+      </div>
+      <div id="resetMsg" class="auth-success" style="display:none"></div>
+      <button class="btn btn-primary btn-full" onclick="handleReset()">Send Reset Link</button>
+      <p class="auth-switch"><a href="#" onclick="showLogin()">← Back to login</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div id="appScreen" style="display:none">
+
+  <button class="hamburger" id="hamburger" onclick="toggleSidebar()">☰</button>
+  <div class="overlay-backdrop" id="sideOverlay" onclick="toggleSidebar()"></div>
+
+  <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="logo">
+        <div class="logo-icon">💰</div>
+        <span class="logo-text">StudyWallet</span>
+      </div>
+      <nav>
+        <div class="nav-label">Overview</div>
+        <button class="nav-item active" data-page="dashboard" onclick="showPage('dashboard',this)"><span class="nav-icon">🏠</span> Dashboard</button>
+        <button class="nav-item" data-page="transactions" onclick="showPage('transactions',this)"><span class="nav-icon">📋</span> Transactions</button>
+        <button class="nav-item" data-page="analytics" onclick="showPage('analytics',this)"><span class="nav-icon">📊</span> Analytics</button>
+        <div class="nav-label">Manage</div>
+        <button class="nav-item" data-page="income" onclick="showPage('income',this)"><span class="nav-icon">💵</span> Income</button>
+        <button class="nav-item" data-page="budget" onclick="showPage('budget',this)"><span class="nav-icon">🎯</span> Savings Goals</button>
+        <div class="nav-label">AI & Fun</div>
+        <button class="nav-item" data-page="chatbot" onclick="showPage('chatbot',this)"><span class="nav-icon">🤖</span> AI Coach</button>
+        <button class="nav-item" data-page="games" onclick="showPage('games',this)"><span class="nav-icon">🎮</span> Fun Zone</button>
+        <div class="nav-label">Account</div>
+        <button class="nav-item" data-page="settings" onclick="showPage('settings',this)"><span class="nav-icon">⚙️</span> Settings</button>
+      </nav>
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebarAvatar">S</div>
+        <div class="sidebar-info">
+          <div class="sidebar-name" id="sidebarName">Student</div>
+          <div class="sidebar-bal" id="sidebarBal">Loading...</div>
+        </div>
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="handleLogout()" title="Logout">↩️</button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <!-- ══ DASHBOARD ══ -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <div>
+            <div class="page-title" id="dashGreet">Good morning 👋</div>
+            <div class="page-subtitle" id="dashDate">Loading...</div>
+          </div>
+          <div class="header-actions">
+            <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙</button>
+            <button class="btn btn-ghost btn-sm" onclick="generateShareLink()">🔗 Share</button>
+          </div>
+        </div>
+
+        <!-- STAT CARDS -->
+        <div class="grid grid-4 mb-20">
+          <div class="stat-card type-income">
+            <div class="stat-label">Total Income</div>
+            <div class="stat-value" id="statIncome">₹0</div>
+            <div class="stat-sub">This month</div>
+            <div class="stat-icon">💰</div>
+          </div>
+          <div class="stat-card type-expense">
+            <div class="stat-label">Total Spent</div>
+            <div class="stat-value" id="statExpense">₹0</div>
+            <div class="stat-sub">This month</div>
+            <div class="stat-icon">🛒</div>
+          </div>
+          <div class="stat-card type-balance">
+            <div class="stat-label">Balance</div>
+            <div class="stat-value" id="statBalance">₹0</div>
+            <div class="stat-sub" id="statBalanceSub">—</div>
+            <div class="stat-icon">💳</div>
+          </div>
+          <div class="stat-card type-days">
+            <div class="stat-label">Daily Budget</div>
+            <div class="stat-value" id="statDailyLimit">₹0</div>
+            <div class="stat-sub">Safe to spend/day</div>
+            <div class="stat-icon">📅</div>
+          </div>
+        </div>
+
+        <!-- SURVIVAL + GOAL -->
+        <div class="grid grid-2 mb-20">
+          <div class="survival-card">
+            <div class="survival-label">MONEY SURVIVAL</div>
+            <div class="survival-days" id="survivalDays">—</div>
+            <div class="survival-sub">days your money will last</div>
+            <div class="survival-note" id="survivalNote">Add transactions to calculate</div>
+          </div>
+          <div class="card">
+            <div class="section-title">🎯 Monthly Savings Goal</div>
+            <div id="goalDisplay">
+              <div class="goal-meta">
+                <span id="goalLabel" style="color:var(--text2);font-size:14px">No goal set</span>
+                <span id="goalFigures" style="font-family:var(--font-head);font-weight:700">—</span>
+              </div>
+              <div class="progress-bar mt-8"><div class="progress-fill good" id="goalBar" style="width:0%"></div></div>
+              <div class="progress-meta"><span id="goalPct">—</span><span id="goalStatus">Set a goal to track savings</span></div>
+            </div>
+            <button class="btn btn-ghost btn-sm mt-12 full-w" onclick="openGoalModal()">+ Set Savings Goal</button>
+          </div>
+        </div>
+
+        <!-- INSIGHTS + RECENT -->
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="section-title">💡 AI Insights</div>
+            <div id="insightsBox"><div class="insight info"><span>ℹ️</span> Add transactions to see personalized AI insights!</div></div>
+          </div>
+          <div class="card">
+            <div class="section-title">⚡ Recent Activity</div>
+            <div id="recentActivity">
+              <div class="empty-state sm"><div>📭</div><p>No transactions yet</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="shareSection" style="display:none;margin-top:20px" class="card">
+          <div class="section-title">🔗 Share with Parents</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:10px">A read-only summary link for your family to track your budget health.</div>
+          <div class="share-row">
+            <input type="text" id="shareInput" readonly style="font-family:var(--font-mono);font-size:12px" />
+            <button class="btn btn-primary btn-sm" onclick="copyShare()">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TRANSACTIONS ══ -->
+      <div class="page" id="page-transactions">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Transactions</div>
+            <div class="page-subtitle">All income & expenses</div>
+          </div>
+          <div class="header-actions flex-wrap">
+            <input type="text" id="txSearch" placeholder="🔍 Search..." style="width:160px" oninput="renderTxPage()" />
+            <select id="txFilter" onchange="renderTxPage()" style="width:130px">
+              <option value="all">All Types</option>
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+            </select>
+            <select id="txCatFilter" onchange="renderTxPage()" style="width:130px">
+              <option value="all">All Categories</option>
+            </select>
+          </div>
+        </div>
+        <div class="card">
+          <div id="txPageList" class="tx-list"></div>
+        </div>
+      </div>
+
+      <!-- ══ ANALYTICS ══ -->
+      <div class="page" id="page-analytics">
+        <div class="page-header">
+          <div><div class="page-title">Analytics</div><div class="page-subtitle">Visualize your financial health</div></div>
+          <select id="analyticsMonth" onchange="updateAnalytics()" style="width:160px">
+            <option value="">This Month</option>
+          </select>
+        </div>
+        <div class="grid grid-2 mb-20">
+          <div class="card"><div class="section-title">🥧 Spending by Category</div><div class="chart-wrap"><canvas id="pieChart"></canvas></div></div>
+          <div class="card"><div class="section-title">📈 6-Month Trend</div><div class="chart-wrap"><canvas id="barChart"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="section-title">📊 Category Breakdown</div>
+          <div id="catBreakdown"><div class="empty-state sm"><div>📊</div><p>No expense data yet</p></div></div>
+        </div>
+      </div>
+
+      <!-- ══ INCOME ══ -->
+      <div class="page" id="page-income">
+        <div class="page-header">
+          <div><div class="page-title">Income Sources</div><div class="page-subtitle">Track all your money sources</div></div>
+          <button class="btn btn-primary" onclick="openModal('income')">+ Add Income</button>
+        </div>
+        <div class="grid grid-4 mb-20" id="incomeSourceCards"></div>
+        <div class="card">
+          <div class="section-title">💵 Income History</div>
+          <div id="incomeList" class="tx-list"></div>
+        </div>
+      </div>
+
+      <!-- ══ BUDGET / GOALS ══ -->
+      <div class="page" id="page-budget">
+        <div class="page-header">
+          <div><div class="page-title">Savings Goals</div><div class="page-subtitle">Monthly savings targets</div></div>
+          <button class="btn btn-primary" onclick="openGoalModal()">+ New Goal</button>
+        </div>
+        <div id="goalsContainer">
+          <div class="empty-state"><div>🎯</div><h3>No Goals Yet</h3><p>Set a monthly savings goal to track progress.</p></div>
+        </div>
+      </div>
+
+      <!-- ══ AI CHATBOT ══ -->
+      <div class="page" id="page-chatbot">
+        <div class="page-header">
+          <div><div class="page-title">AI Financial Coach</div><div class="page-subtitle">Powered by Claude AI</div></div>
+        </div>
+        <div class="card chat-card">
+          <div class="chat-mode-bar">
+            <button class="mode-chip active" onclick="setChatMode('finance',this)">💼 Finance Coach</button>
+            <button class="mode-chip" onclick="setChatMode('assistant',this)">🔍 Data Assistant</button>
+            <button class="mode-chip" onclick="setChatMode('fun',this)">😄 Fun Chat</button>
+          </div>
+          <div class="chat-messages" id="chatMessages">
+            <div class="chat-msg ai">
+              <div class="chat-avatar">🤖</div>
+              <div class="chat-bubble">Hey! I'm your AI Financial Coach 👋 Ask me anything about budgeting, your spending, or just chat. I'm here to help!</div>
+            </div>
+          </div>
+          <div class="chat-input-row">
+            <input type="text" id="chatInput" placeholder="Ask about your finances..." onkeydown="if(event.key==='Enter')sendChat()" />
+            <button class="btn btn-primary" onclick="sendChat()">Send ➤</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ GAMES ══ -->
+      <div class="page" id="page-games">
+        <div class="page-header">
+          <div><div class="page-title">Fun Zone 🎮</div><div class="page-subtitle">Learn finance, earn points, beat the leaderboard!</div></div>
+        </div>
+        <div class="grid grid-3 mb-20">
+          <div class="game-select-card" onclick="startGame('dodge')">
+            <div class="game-emoji">🪙</div>
+            <div class="game-name">Money Saver</div>
+            <div class="game-desc">Dodge expenses, collect coins!</div>
+            <div class="game-hi">Best: <span id="dodgeHi">0</span></div>
+          </div>
+          <div class="game-select-card" onclick="startGame('quiz')">
+            <div class="game-emoji">🧠</div>
+            <div class="game-name">Budget Quiz</div>
+            <div class="game-desc">Test your financial wisdom!</div>
+            <div class="game-hi">Best: <span id="quizHi">0</span></div>
+          </div>
+          <div class="game-select-card" onclick="startGame('reaction')">
+            <div class="game-emoji">⚡</div>
+            <div class="game-name">Reaction Speed</div>
+            <div class="game-desc">Tap money icons fast!</div>
+            <div class="game-hi">Best: <span id="reactionHi">0</span></div>
+          </div>
+        </div>
+
+        <!-- Dodge Game -->
+        <div id="game-dodge" style="display:none" class="card mb-20">
+          <div class="game-hud">
+            <div><div class="hud-label">SCORE</div><div class="hud-val" id="dodgeScore">0</div></div>
+            <div><div class="hud-label">LIVES</div><div id="dodgeLives" style="font-size:20px">❤️❤️❤️</div></div>
+            <button class="btn btn-ghost btn-sm" onclick="stopGame('dodge')">✕ Quit</button>
+          </div>
+          <canvas id="dodgeCanvas" class="game-canvas" width="700" height="360" style="width:100%;cursor:crosshair"></canvas>
+          <div class="game-hint">← → Arrow keys or tap/click to move</div>
+        </div>
+
+        <!-- Quiz Game -->
+        <div id="game-quiz" style="display:none" class="card mb-20">
+          <div class="game-hud">
+            <div><div class="hud-label">SCORE</div><div class="hud-val" id="quizScore">0</div></div>
+            <div><div class="hud-label">PROGRESS</div><div style="font-family:var(--font-head);font-weight:700" id="quizProg">1/10</div></div>
+            <button class="btn btn-ghost btn-sm" onclick="stopGame('quiz')">✕ Quit</button>
+          </div>
+          <div id="quizContent">
+            <div class="quiz-q-card"><div class="quiz-q-tag">FINANCIAL DECISION</div><div class="quiz-q-text" id="quizQ">Loading...</div></div>
+            <div class="quiz-options" id="quizOpts"></div>
+          </div>
+        </div>
+
+        <!-- Reaction Game -->
+        <div id="game-reaction" style="display:none" class="card mb-20">
+          <div class="game-hud">
+            <div><div class="hud-label">SCORE</div><div class="hud-val" id="rxScore">0</div></div>
+            <div><div class="hud-label">TIME</div><div style="font-family:var(--font-head);font-weight:700;font-size:20px" id="rxTime">30s</div></div>
+            <button class="btn btn-ghost btn-sm" onclick="stopGame('reaction')">✕ Quit</button>
+          </div>
+          <div id="rxArea" class="rx-area"></div>
+          <div class="game-hint">Tap/click the money icons as fast as you can!</div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="card">
+          <div class="section-title">🏆 Leaderboard</div>
+          <div id="leaderboard"><div class="empty-state sm"><div>🏆</div><p>Play games to appear here!</p></div></div>
+        </div>
+      </div>
+
+      <!-- ══ SETTINGS ══ -->
+      <div class="page" id="page-settings">
+        <div class="page-header">
+          <div><div class="page-title">Settings</div><div class="page-subtitle">Customize your experience</div></div>
+        </div>
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="section-title">👤 Profile</div>
+            <div class="profile-row mb-20">
+              <div class="profile-avatar" id="profileAvatarLg">S</div>
+              <div>
+                <div style="font-family:var(--font-head);font-size:18px;font-weight:700" id="profileDisplayName">Student</div>
+                <div style="font-size:13px;color:var(--text2)" id="profileDisplayEmail">—</div>
+                <div class="badge badge-purple mt-4" id="profileBadge">🎓 Student</div>
+              </div>
+            </div>
+            <div class="form-group"><label>Display Name</label><input type="text" id="settingName" placeholder="Your name" /></div>
+            <div class="form-group"><label>University</label><input type="text" id="settingUni" placeholder="Your university" /></div>
+            <div class="form-group"><label>Monthly Budget</label><input type="number" id="settingBudget" placeholder="5000" min="0" /></div>
+            <button class="btn btn-primary full-w" onclick="saveProfile()">Save Profile</button>
+          </div>
+          <div class="card">
+            <div class="section-title">🎨 Preferences</div>
+            <div class="setting-row">
+              <div><div class="setting-label">Dark Mode</div><div class="setting-hint">Toggle dark/light theme</div></div>
+              <label class="switch"><input type="checkbox" id="darkSwitch" checked onchange="toggleTheme()"><span class="slider"></span></label>
+            </div>
+            <div class="setting-row">
+              <div><div class="setting-label">Currency Symbol</div><div class="setting-hint">Display currency</div></div>
+              <select id="currencySelect" onchange="saveCurrency()" style="width:90px">
+                <option value="₹">₹ INR</option>
+                <option value="$">$ USD</option>
+                <option value="€">€ EUR</option>
+                <option value="£">£ GBP</option>
+                <option value="¥">¥ JPY</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <div><div class="setting-label">AI API Key</div><div class="setting-hint">For AI chatbot (optional)</div></div>
+              <input type="password" id="apiKeyInput" placeholder="sk-..." style="width:140px;font-size:12px" />
+            </div>
+            <div class="divider"></div>
+            <div class="section-title mt-4">🔐 Account</div>
+            <button class="btn btn-ghost full-w mb-8" onclick="handlePasswordReset()">📧 Send Password Reset Email</button>
+            <button class="btn btn-danger full-w" onclick="handleLogout()">↩️ Sign Out</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab" onclick="openModal('expense')" title="Add transaction">+</button>
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Add Transaction Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Add Transaction</div>
+      <button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button>
+    </div>
+    <div class="toggle-tabs">
+      <button class="ttab" id="incTab" onclick="setModalType('income')">💰 Income</button>
+      <button class="ttab active" id="expTab" onclick="setModalType('expense')">💸 Expense</button>
+    </div>
+    <div class="form-group"><label>Amount *</label><input type="number" id="txAmt" placeholder="0.00" min="0.01" step="0.01" /></div>
+    <div class="form-group" id="fgCategory">
+      <label>Category *</label>
+      <select id="txCat">
+        <option value="Food">🍕 Food</option>
+        <option value="Rent">🏠 Rent</option>
+        <option value="Travel">🚌 Travel</option>
+        <option value="Shopping">🛍️ Shopping</option>
+        <option value="Education">📚 Education</option>
+        <option value="Health">💊 Health</option>
+        <option value="Entertainment">🎬 Entertainment</option>
+        <option value="Other">📦 Other</option>
+      </select>
+    </div>
+    <div class="form-group" id="fgSource" style="display:none">
+      <label>Source *</label>
+      <select id="txSrc">
+        <option value="Parent">👨‍👩‍👧 Parent / Family</option>
+        <option value="Internship">💼 Internship</option>
+        <option value="Scholarship">🎓 Scholarship</option>
+        <option value="Part-time">🛠️ Part-time Job</option>
+        <option value="Other">📦 Other</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Date *</label><input type="date" id="txDate" /></div>
+    <div class="form-group"><label>Notes</label><input type="text" id="txNotes" placeholder="What was this for?" /></div>
+    <div id="modalError" class="auth-error" style="display:none"></div>
+    <button class="btn btn-primary full-w" onclick="addTransaction()" id="addTxBtn">Add Transaction</button>
+  </div>
+</div>
+
+<!-- Edit Transaction Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Edit Transaction</div>
+      <button class="btn btn-ghost btn-icon" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="form-group"><label>Amount *</label><input type="number" id="editAmt" min="0.01" step="0.01" /></div>
+    <div class="form-group" id="editFgCat">
+      <label>Category</label>
+      <select id="editCat">
+        <option value="Food">🍕 Food</option>
+        <option value="Rent">🏠 Rent</option>
+        <option value="Travel">🚌 Travel</option>
+        <option value="Shopping">🛍️ Shopping</option>
+        <option value="Education">📚 Education</option>
+        <option value="Health">💊 Health</option>
+        <option value="Entertainment">🎬 Entertainment</option>
+        <option value="Other">📦 Other</option>
+      </select>
+    </div>
+    <div class="form-group" id="editFgSrc" style="display:none">
+      <label>Source</label>
+      <select id="editSrc">
+        <option value="Parent">👨‍👩‍👧 Parent / Family</option>
+        <option value="Internship">💼 Internship</option>
+        <option value="Scholarship">🎓 Scholarship</option>
+        <option value="Part-time">🛠️ Part-time Job</option>
+        <option value="Other">📦 Other</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Date</label><input type="date" id="editDate" /></div>
+    <div class="form-group"><label>Notes</label><input type="text" id="editNotes" /></div>
+    <input type="hidden" id="editId" />
+    <input type="hidden" id="editType" />
+    <button class="btn btn-primary full-w" onclick="saveEdit()" id="saveEditBtn">Save Changes</button>
+  </div>
+</div>
+
+<!-- Savings Goal Modal -->
+<div class="modal-overlay" id="goalModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Set Savings Goal</div>
+      <button class="btn btn-ghost btn-icon" onclick="closeGoalModal()">✕</button>
+    </div>
+    <div class="form-group"><label>Goal Title</label><input type="text" id="goalTitle" placeholder="e.g. Save for laptop" /></div>
+    <div class="form-group"><label>Target Amount *</label><input type="number" id="goalAmt" placeholder="5000" min="1" /></div>
+    <div class="form-group"><label>Month *</label><input type="month" id="goalMonth" /></div>
+    <button class="btn btn-primary full-w" onclick="saveGoal()">Save Goal</button>
+  </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:360px;text-align:center">
+    <div style="font-size:40px;margin-bottom:12px">⚠️</div>
+    <div class="modal-title" style="margin-bottom:8px">Delete Transaction?</div>
+    <div style="color:var(--text2);font-size:14px;margin-bottom:24px">This action cannot be undone.</div>
+    <div style="display:flex;gap:12px">
+      <button class="btn btn-ghost full-w" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger full-w" id="confirmDeleteBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
